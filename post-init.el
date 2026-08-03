@@ -870,3 +870,26 @@
 (let ((npm-bin (expand-file-name "~/.local/npm/bin")))
   (setenv "PATH" (concat npm-bin path-separator (getenv "PATH")))
   (add-to-list 'exec-path npm-bin))
+
+;; Custom functions
+(defun run-proyecto-deportivo ()
+  "Start the FastAPI backend and Next.js frontend in separate vterms."
+  (interactive)
+
+  (let ((default-directory "~/gitrepos/Proyecto-deportivo/"))
+
+    ;; Backend
+    (let ((default-directory "~/gitrepos/Proyecto-deportivo/servidor_deportivo/"))
+      (vterm "FastAPI")
+      (rename-buffer "FastAPI" t)
+      (vterm-send-string "source .venv/bin/activate")
+      (vterm-send-return)
+      (vterm-send-string "fastapi dev")
+      (vterm-send-return))
+
+    ;; Frontend
+    (let ((default-directory "~/gitrepos/Proyecto-deportivo/app_deportivo_nextjs/"))
+      (vterm "NextJS")
+      (rename-buffer "NextJS" t)
+      (vterm-send-string "npm run dev")
+      (vterm-send-return))))
