@@ -51,7 +51,7 @@
 
 ;; Set the default font to DejaVu Sans Mono with specific size and weight
 (set-face-attribute 'default nil
-                    :height 120 :weight 'normal :family "Hack Nerd Font Mono")
+                    :height 110 :weight 'normal :family "Hack Nerd Font Mono")
 
 ;; Magit
 (use-package magit
@@ -539,6 +539,11 @@
   :commands (goto-last-change
              goto-last-change-reverse))
 
+;; Changes behavior of '-' key to open the current directory file
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global
+    (kbd "-") #'dired-jump))
+
 ;; The following code enables commenting and uncommenting by pressing gcc in
 ;; normal mode and gc in visual mode.
 (with-eval-after-load "evil"
@@ -805,6 +810,7 @@
   :config
   (dashboard-setup-startup-hook))
 
+;; Clojure LSP
 (use-package cider
   :ensure t
   :after clojure-mode
@@ -852,3 +858,15 @@
 
     ;; Formatting
     "cf" '(cider-format-buffer :wk "Format Buffer")))
+
+;; (P)ython (E)xecutable (T)racker (Auto-detecs .venv)
+
+(use-package pet
+  :ensure t
+  :config
+  (add-hook 'python-base-mode-hook #'pet-mode))
+
+;; Load Node binaries adding to the PATH
+(let ((npm-bin (expand-file-name "~/.local/npm/bin")))
+  (setenv "PATH" (concat npm-bin path-separator (getenv "PATH")))
+  (add-to-list 'exec-path npm-bin))
