@@ -57,6 +57,26 @@
 (use-package magit
   :commands magit-status)
 
+;; Support for Git files (.gitconfig, .gitignore, .gitattributes...)
+(use-package git-modes
+  :commands (gitattributes-mode
+             gitconfig-mode
+             gitignore-mode)
+  :mode (("/\\.gitignore\\'" . gitignore-mode)
+         ("/info/exclude\\'" . gitignore-mode)
+         ("/git/ignore\\'" . gitignore-mode)
+
+         ("/\\.gitconfig\\'" . gitconfig-mode)
+         ("/\\.git/config\\'" . gitconfig-mode)
+         ("/modules/.*/config\\'" . gitconfig-mode)
+         ("/git/config\\'" . gitconfig-mode)
+         ("/\\.gitmodules\\'" . gitconfig-mode)
+         ("/etc/gitconfig\\'" . gitconfig-mode)
+
+         ("/\\.gitattributes\\'" . gitattributes-mode)
+         ("/info/attributes\\'" . gitattributes-mode)
+         ("/git/attributes\\'" . gitattributes-mode)))
+
 ;; Projectile
 (use-package projectile
   :init
@@ -124,14 +144,20 @@
   "lr" '(eglot-rename :wk "Rename symbol")
   "lf" '(eglot-format-buffer :wk "Format buffer")
   "la" '(eglot-code-actions :wk "Code actions")
-  "ls" '(yas-insert-snippet :wk "Insert snippet")
+  "li" '(yas-insert-snippet :wk "Insert snippet")
 
   "t"  '(:ignore t :wk "Toggles")
   "tl" '(display-line-numbers-mode :wk "Line numbers")
   "tw" '(whitespace-mode :wk "Whitespace")
   "th" '(diff-hl-mode :wk "Diff highlighting")
   "tt" '(modus-themes-rotate :wk "Rotate theme")
-  "tb" '(my/toggle-frame-decorations :wk "Titlebar"))
+  "tb" '(my/toggle-frame-decorations :wk "Titlebar")
+
+  "o"  '(:ignore t :wk "Org")
+  "oa" '(org-agenda :wk "Agenda")
+  "oc" '(org-capture :wk "Capture")
+  "ol" '(org-store-link :wk "Store link")
+  "ob" '(org-switchb :wk "Switch Org buffer"))
 
 ;; Auto-revert in Emacs is a feature that automatically updates the
 ;; contents of a buffer to reflect changes made to the underlying file
@@ -578,6 +604,179 @@
   :custom
   (markdown-toc-header-toc-title "**Table of Contents**"))
 
+;; Code folding
+(use-package kirigami
+  :commands (kirigami-open-fold
+             kirigami-open-fold-rec
+             kirigami-close-fold
+             kirigami-toggle-fold
+             kirigami-open-folds
+             kirigami-close-folds-except-current
+             kirigami-close-folds)
+
+  :init
+  (kirigami-global-mode 1))
+
+;; Uncomment the following if you are an `evil-mode' user:
+(with-eval-after-load 'evil
+  (define-key evil-normal-state-map "zo" 'kirigami-open-fold)
+  (define-key evil-normal-state-map "zO" 'kirigami-open-fold-rec)
+  (define-key evil-normal-state-map "zc" 'kirigami-close-fold)
+  (define-key evil-normal-state-map "za" 'kirigami-toggle-fold)
+  (define-key evil-normal-state-map "zr" 'kirigami-open-folds)
+  (define-key evil-normal-state-map "zm" 'kirigami-close-folds))
+
+;; The built-in outline-minor-mode provides structured code folding in modes
+;; such as Emacs Lisp and Python, allowing users to collapse and expand sections
+;; based on headings or indentation levels. This feature enhances navigation and
+;; improves the management of large files with hierarchical structures.
+(use-package outline
+  :ensure nil
+  :commands outline-minor-mode
+  :hook
+  (;; Use " ?" instead of the default ellipsis "..." for folded text to make
+   ;; folds more visually distinctive and readable.
+   (outline-minor-mode
+    .
+    (lambda()
+      (let* ((display-table (or buffer-display-table (make-display-table)))
+             (face-offset (* (face-id 'shadow) (ash 1 22)))
+             (value (vconcat (mapcar (lambda (c) (+ face-offset c)) " ?"))))
+        (set-display-table-slot display-table 'selective-display value)
+        (setq buffer-display-table display-table))))))
+
+;; Enable the mode
+(add-hook 'emacs-lisp-mode-hook #'outline-minor-mode)
+(add-hook 'lisp-mode-hook #'outline-minor-mode)
+(add-hook 'conf-mode-hook #'outline-minor-mode)
+(add-hook 'markdown-mode-hook #'outline-minor-mode)
+(add-hook 'diff-mode-hook #'outline-minor-mode)
+
+;; Systems and General Purpose
+(add-hook 'c-mode-hook #'hs-minor-mode)
+(add-hook 'c++-mode-hook #'hs-minor-mode)
+(add-hook 'java-mode-hook #'hs-minor-mode)
+(add-hook 'rust-mode-hook #'hs-minor-mode)
+(add-hook 'go-mode-hook #'hs-minor-mode)
+(add-hook 'ruby-mode-hook #'hs-minor-mode)
+(add-hook 'php-mode-hook #'hs-minor-mode)
+(add-hook 'perl-mode-hook #'hs-minor-mode)
+
+;; Web and Frontend
+(add-hook 'js-mode-hook #'hs-minor-mode)
+(add-hook 'typescript-mode-hook #'hs-minor-mode)
+(add-hook 'css-mode-hook #'hs-minor-mode)
+
+;; Scripting, Data, and Infrastructure
+(add-hook 'sh-mode-hook #'hs-minor-mode) ; for bash/shell scripts
+(add-hook 'json-mode-hook #'hs-minor-mode)
+(add-hook 'lua-mode-hook #'hs-minor-mode)
+(add-hook 'nxml-mode-hook #'hs-minor-mode)
+(add-hook 'html-mode-hook #'hs-minor-mode)  ;; mhtml and html
+
+(use-package outline-indent
+  :commands outline-indent-minor-mode
+  :custom
+  (outline-indent-ellipsis " ?"))
+
+;; Python
+(add-hook 'python-mode-hook #'outline-indent-minor-mode)
+(add-hook 'python-ts-mode-hook #'outline-indent-minor-mode)
+
+;; Yaml
+(add-hook 'yaml-mode-hook #'outline-indent-minor-mode)
+(add-hook 'yaml-ts-mode-hook #'outline-indent-minor-mode)
+
+;; Haskell
+(add-hook 'haskell-mode-hook #'outline-indent-minor-mode)
+
+(use-package treesit-fold
+  :commands (treesit-fold-close
+             treesit-fold-close-all
+             treesit-fold-open
+             treesit-fold-toggle
+             treesit-fold-open-all
+             treesit-fold-mode
+             global-treesit-fold-mode
+             treesit-fold-open-recursively
+             treesit-fold-line-comment-mode)
+
+  :custom
+  (treesit-fold-line-count-show t)
+  (treesit-fold-line-count-format " ?")
+
+  :config
+  (set-face-attribute 'treesit-fold-replacement-face nil
+                      :foreground "#808080"
+                      :box nil
+                      :weight 'bold))
+
+;; Systems and General Purpose
+(add-hook 'c-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'c++-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'java-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'rust-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'go-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'ruby-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'php-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'csharp-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'go-mod-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'lua-ts-mode-hook #'treesit-fold-mode)
+
+;; Web and Frontend
+(add-hook 'js-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'typescript-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'tsx-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'css-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'html-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'heex-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'xml-ts-mode-hook #'treesit-fold-mode)
+
+;; Scripting and Infrastructure
+(add-hook 'bash-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'cmake-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'dockerfile-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'awk-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'vimscript-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'nix-ts-mode-hook #'treesit-fold-mode)
+
+;; Data and Configuration
+(add-hook 'json-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'toml-ts-mode-hook #'treesit-fold-mode)
+
+;; Build Systems and Makefiles
+(add-hook 'makefile-ts-mode-hook #'treesit-fold-mode)
+
+;; Hardware Description and Shaders
+(add-hook 'verilog-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'vhdl-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'hlsl-ts-mode-hook #'treesit-fold-mode)
+
+;; Scientific, Data Science, and Academic
+(add-hook 'latex-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'beancount-ts-mode-hook #'treesit-fold-mode)
+
+;; Documentation and Diagrams
+(add-hook 'markdown-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'mermaid-ts-mode-hook #'treesit-fold-mode)
+
+;; Other
+(add-hook 'gdscript-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'clojure-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'caml-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'ocaml-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'erlang-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'elixir-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'scala-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'dart-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'haskell-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'julia-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'kotlin-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'gleam-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'noir-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'swift-ts-mode-hook #'treesit-fold-mode)
+(add-hook 'zig-ts-mode-hook #'treesit-fold-mode)
+
 ;; Apheleia is an Emacs package designed to run code formatters (e.g., Shfmt,
 ;; Black and Prettier) asynchronously without disrupting the cursor position.
 (use-package apheleia
@@ -675,6 +874,121 @@
   (setq diff-hl-update-async t)  ; Do not block Emacs
   (setq diff-hl-global-modes '(not pdf-view-mode image-mode)))
 
+;; Org mode is a major mode designed for organizing notes, planning, task
+;; management, and authoring documents using plain text with a simple and
+;; expressive markup syntax. It supports hierarchical outlines, TODO lists,
+;; scheduling, deadlines, time tracking, and exporting to multiple formats
+;; including HTML, LaTeX, PDF, and Markdown.
+(use-package org
+  :commands (org-mode org-version)
+  :mode
+  ("\\.org\\'" . org-mode)
+  :custom
+  (org-hide-leading-stars t)
+  (org-startup-indented t)
+  (org-adapt-indentation nil)
+  (org-edit-src-content-indentation 0)
+  ;; (org-fontify-done-headline t)
+  ;; (org-fontify-todo-headline t)
+  ;; (org-fontify-whole-heading-line t)
+  ;; (org-fontify-quote-and-verse-blocks t)
+  (org-startup-truncated t)
+  :config
+  (general-create-definer my/org-leader
+    :states '(normal visual)
+    :keymaps 'org-mode-map
+    :prefix "SPC m")
+
+  (my/org-leader
+    ;; Navigation / structure
+    "h" '(org-insert-heading-respect-content :wk "Insert heading")
+    "H" '(org-insert-subheading :wk "Insert subheading")
+
+    ;; TODO / state
+    "t" '(org-todo :wk "Cycle TODO state")
+    "T" '(org-shiftright :wk "Next TODO state")
+
+    ;; Scheduling
+    "d" '(:ignore t :wk "Dates")
+    "ds" '(org-schedule :wk "Schedule")
+    "dd" '(org-deadline :wk "Deadline")
+    "dt" '(org-time-stamp :wk "Timestamp")
+
+    ;; Tags / priority
+    "," '(org-set-tags-command :wk "Set tags")
+    "p" '(org-priority :wk "Set priority")
+
+    ;; Links
+    "l" '(:ignore t :wk "Links")
+    "li" '(org-insert-link :wk "Insert link")
+    "lo" '(org-open-at-point :wk "Open link")
+
+    ;; Checkboxes
+    "x" '(org-toggle-checkbox :wk "Toggle checkbox")
+
+    ;; Structure editing (promote/demote/move)
+    "j" '(org-metadown :wk "Move subtree down")
+    "k" '(org-metaup :wk "Move subtree up")
+    "L" '(org-metaright :wk "Demote")
+    "H" '(org-metaleft :wk "Promote")
+
+    ;; Source blocks / export
+    "'" '(org-edit-special :wk "Edit src block")
+    "e" '(org-export-dispatch :wk "Export")
+
+    ;; Archive
+    "a" '(org-archive-subtree :wk "Archive subtree")
+
+    ;; Refile
+    "r" '(org-refile :wk "Refile")))
+
+;; The org-appear package temporarily reveals normally hidden elements (such as emphasis
+;; markers, links, or entities) when the cursor enters them, and hides them again when the
+;; cursor leaves.
+(use-package org-appear
+  :commands org-appear-mode
+  :hook (org-mode . org-appear-mode))
+
+;; Org-modern
+(use-package org-modern)
+
+(setq
+ ;; Edit settings
+ org-auto-align-tags nil
+ org-tags-column 0
+ org-catch-invisible-edits 'show-and-error
+ org-special-ctrl-a/e t
+ org-insert-heading-respect-content t
+
+ ;; Org styling, hide markup etc.
+ org-hide-emphasis-markers t
+ org-pretty-entities t
+ org-agenda-tags-column 0
+ org-ellipsis "")
+
+(add-hook 'org-mode-hook #'org-modern-mode)
+(add-hook 'org-agenda-finalize-hook #'org-modern-agenda)
+
+;; The buffer-terminator Emacs package automatically and safely kills
+;; buffers, ensuring a clean and efficient workspace while enhancing
+;; the performance of Emacs by reducing open buffers, which minimizes
+;; active modes, timers, processes...
+(use-package buffer-terminator
+  :custom
+  ;; Enable/Disable verbose mode to log buffer cleanup events
+  (buffer-terminator-verbose nil)
+
+  ;; Set the inactivity timeout (in seconds) after which buffers are considered
+  ;; inactive (default is 30 minutes):
+  (buffer-terminator-inactivity-timeout (* 30 60)) ; 30 minutes
+
+  ;; Define how frequently the cleanup process should run (default is every 10
+  ;; minutes):
+  (buffer-terminator-interval (* 10 60)) ; 10 minutes
+
+  :init
+  (buffer-terminator-mode 1))
+
 ;; Set up the Language Server Protocol (LSP) servers using Eglot.
 (use-package eglot
   :ensure nil
@@ -703,6 +1017,13 @@
 
                          :yapf (:enabled :json-false)
                          :rope_autoimport (:enabled :json-false)))))
+
+(dolist (hook '(typescript-mode-hook
+                typescript-ts-mode-hook
+                tsx-ts-mode-hook
+                js-mode-hook
+                js-ts-mode-hook))
+  (add-hook hook #'eglot-ensure))
 
 ;; `vterm' is an Emacs terminal emulator that provides a fully interactive shell
 ;; experience within Emacs, supporting features such as color, cursor movement,
@@ -860,7 +1181,6 @@
     "cf" '(cider-format-buffer :wk "Format Buffer")))
 
 ;; (P)ython (E)xecutable (T)racker (Auto-detecs .venv)
-
 (use-package pet
   :ensure t
   :config
